@@ -27,8 +27,4 @@ module JWT
   def decode(jwt, key = nil, verify = true, options = {}, &keyfinder)
     Decode.new(jwt, key, verify, DEFAULT_OPTIONS.merge(options), &keyfinder).decode_segments
   end
-
-  def base64url_decode(str)
-    Decode.base64url_decode(str)
-  end
 end

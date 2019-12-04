@@ -16,11 +16,6 @@ If you have further questions related to development or usage, join us: [ruby-jw
 * Ruby 1.9.3 support was dropped at December 31st, 2016.
 * Version 1.5.3 yanked. See: [#132](https://github.com/jwt/ruby-jwt/issues/132) and [#133](https://github.com/jwt/ruby-jwt/issues/133)
 
-## Announcements
-
-* Ruby 1.9.3 support will be dropped by December 31st, 2016.
-* Version 1.5.3 yanked. See: [#132](https://github.com/jwt/ruby-jwt/issues/132) and [#133](https://github.com/jwt/ruby-jwt/issues/133)
-
 ## Installing
 
 ### Using Rubygems:
@@ -53,7 +48,7 @@ payload = { data: 'test' }
 # IMPORTANT: set nil as password parameter
 token = JWT.encode payload, nil, 'none'
 
-# eyJ0eXAiOiJKV1QiLCJhbGciOiJub25lIn0.eyJkYXRhIjoidGVzdCJ9.
+# eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTUxMiJ9.eyJ1c2VyX2lkIjoic29tZUB1c2VyLnRsZCJ9.
 puts token
 
 # Set password to nil and validation to false otherwise this won't work
@@ -79,7 +74,7 @@ hmac_secret = 'my$ecretK3y'
 
 token = JWT.encode payload, hmac_secret, 'HS256'
 
-# eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJkYXRhIjoidGVzdCJ9.ZxW8go9hz3ETCSfxFxpwSkYg_602gOPKearsf6DsxgY
+# eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTUxMiJ9.eyJ1c2VyX2lkIjoic29tZUB1c2VyLnRsZCJ9.qtKh77EpQhEASvpPMm-9QZFasnzSNmYQSVi4mlYNV-AkG-hO3_GkEs0sxBzHRYJiflKRHgJzFMkr1kfTVUxJiQ
 puts token
 
 decoded_token = JWT.decode token, hmac_secret, true, { algorithm: 'HS256' }
