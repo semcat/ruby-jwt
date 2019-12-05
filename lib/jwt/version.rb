@@ -10,15 +10,15 @@ module JWT
   # Moments version builder module
   module VERSION
     # major version
-    MAJOR = 1
+    MAJOR = 2
     # minor version
-    MINOR = 5
+    MINOR = 2
     # tiny version
-    TINY  = 6
+    TINY  = 1
     # alpha, beta, etc. tag
     PRE   = nil
 
     # Build version string
-    STRING = [MAJOR, MINOR, TINY, PRE].compact.join('.')
+    STRING = [[MAJOR, MINOR, TINY].compact.join('.'), PRE].compact.join('-')
   end
 end

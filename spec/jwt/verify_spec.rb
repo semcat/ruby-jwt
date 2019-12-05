@@ -8,8 +8,8 @@ module JWT
     let(:options) { { leeway: 0 } }
 
     context '.verify_aud(payload, options)' do
-      let(:scalar_aud) { 'ruby-jwt-audience' }
-      let(:array_aud) { %w(ruby-jwt-aud test-aud ruby-ruby-ruby) }
+      let(:scalar_aud) { 'ruby-jwt-aud' }
+      let(:array_aud) { %w[ruby-jwt-aud test-aud ruby-ruby-ruby] }
       let(:scalar_payload) { base_payload.merge('aud' => scalar_aud) }
       let(:array_payload) { base_payload.merge('aud' => array_aud) }
 
@@ -25,44 +25,24 @@ module JWT
         end.to raise_error JWT::InvalidAudError
       end
 
-      it 'must raise JWT::InvalidAudError when the singular audience does not match and the options aud key is a string' do
-        expect do
-          Verify.verify_aud(scalar_payload, options.merge('aud' => 'no-match'))
-        end.to raise_error JWT::InvalidAudError
-      end
-
       it 'must allow a matching singular audience to pass' do
         Verify.verify_aud(scalar_payload, options.merge(aud: scalar_aud))
-      end
-
-      it 'must allow a matching audence to pass when the options key is a string' do
-        Verify.verify_aud(scalar_payload, options.merge('aud' => scalar_aud))
       end
 
       it 'must allow an array with any value matching the one in the options' do
         Verify.verify_aud(array_payload, options.merge(aud: array_aud.first))
       end
 
-      it 'must allow an array with any value matching the one in the options with a string options key' do
-        Verify.verify_aud(array_payload, options.merge('aud' => array_aud.first))
+      it 'must allow an array with any value matching any value in the options array' do
+        Verify.verify_aud(array_payload, options.merge(aud: array_aud))
       end
 
-      it 'should allow strings or symbolds in options array' do
-        options['aud'] = [
-          'ruby-jwt-aud', 
-          'test-aud',
-          'ruby-ruby-ruby',
-          :test
-        ]
-
-        array_payload['aud'].push('test')
-        
-        Verify.verify_aud(array_payload, options)
+      it 'must allow a singular audience payload matching any value in the options array' do
+        Verify.verify_aud(scalar_payload, options.merge(aud: array_aud))
       end
     end
 
     context '.verify_expiration(payload, options)' do
-      let(:leeway) { 10 }
       let(:payload) { base_payload.merge('exp' => (Time.now.to_i - 5)) }
 
       it 'must raise JWT::ExpiredSignature when the token has expired' do
@@ -71,8 +51,12 @@ module JWT
         end.to raise_error JWT::ExpiredSignature
       end
 
-      it 'must allow some leeway in the expiration when configured' do
+      it 'must allow some leeway in the expiration when global leeway is configured' do
         Verify.verify_expiration(payload, options.merge(leeway: 10))
+      end
+
+      it 'must allow some leeway in the expiration when exp_leeway is configured' do
+        Verify.verify_expiration(payload, options.merge(exp_leeway: 10))
       end
 
       it 'must be expired if the exp claim equals the current time' do
@@ -81,6 +65,16 @@ module JWT
         expect do
           Verify.verify_expiration(payload, options)
         end.to raise_error JWT::ExpiredSignature
+      end
+
+      context 'when leeway is not specified' do
+        let(:options) { {} }
+
+        it 'used a default leeway of 0' do
+          expect do
+            Verify.verify_expiration(payload, options)
+          end.to raise_error JWT::ExpiredSignature
+        end
       end
     end
 
@@ -92,8 +86,9 @@ module JWT
         Verify.verify_iat(payload, options)
       end
 
-      it 'must allow configured leeway' do
-        Verify.verify_iat(payload.merge('iat' => (iat + 60)), options.merge(leeway: 70))
+      it 'must ignore configured leeway' do
+        expect{Verify.verify_iat(payload.merge('iat' => (iat + 60)), options.merge(leeway: 70)) }
+          .to raise_error(JWT::InvalidIatError)
       end
 
       it 'must properly handle integer times' do
@@ -119,20 +114,39 @@ module JWT
 
       let(:invalid_token) { JWT.encode base_payload, payload[:secret] }
 
-      it 'must raise JWT::InvalidIssuerError when the configured issuer does not match the payload issuer' do
-        expect do
-          Verify.verify_iss(payload, options.merge(iss: 'mismatched-issuer'))
-        end.to raise_error JWT::InvalidIssuerError
-      end
+      context 'when iss is a String' do
+        it 'must raise JWT::InvalidIssuerError when the configured issuer does not match the payload issuer' do
+          expect do
+            Verify.verify_iss(payload, options.merge(iss: 'mismatched-issuer'))
+          end.to raise_error JWT::InvalidIssuerError
+        end
 
-      it 'must raise JWT::InvalidIssuerError when the payload does not include an issuer' do
-        expect do
-          Verify.verify_iss(base_payload, options.merge(iss: iss))
-        end.to raise_error(JWT::InvalidIssuerError, /received <none>/)
-      end
+        it 'must raise JWT::InvalidIssuerError when the payload does not include an issuer' do
+          expect do
+            Verify.verify_iss(base_payload, options.merge(iss: iss))
+          end.to raise_error(JWT::InvalidIssuerError, /received <none>/)
+        end
 
-      it 'must allow a matching issuer to pass' do
-        Verify.verify_iss(payload, options.merge(iss: iss))
+        it 'must allow a matching issuer to pass' do
+          Verify.verify_iss(payload, options.merge(iss: iss))
+        end
+      end
+      context 'when iss is an Array' do
+        it 'must raise JWT::InvalidIssuerError when no matching issuers in array' do
+          expect do
+            Verify.verify_iss(payload, options.merge(iss: %w[first second]))
+          end.to raise_error JWT::InvalidIssuerError
+        end
+
+        it 'must raise JWT::InvalidIssuerError when the payload does not include an issuer' do
+          expect do
+            Verify.verify_iss(base_payload, options.merge(iss: %w[first second]))
+          end.to raise_error(JWT::InvalidIssuerError, /received <none>/)
+        end
+
+        it 'must allow an array with matching issuer to pass' do
+          Verify.verify_iss(payload, options.merge(iss: ['first', iss, 'third']))
+        end
       end
     end
 
@@ -164,6 +178,19 @@ module JWT
       it 'true proc should not raise JWT::InvalidJtiError' do
         Verify.verify_jti(payload, options.merge(verify_jti: ->(_jti) { true }))
       end
+
+      it 'it should not throw arguement error with 2 args' do
+        expect do
+          Verify.verify_jti(payload, options.merge(verify_jti: ->(_jti, pl) {
+            true
+          }))
+        end.to_not raise_error
+      end
+      it 'should have payload as second param in proc' do
+        Verify.verify_jti(payload, options.merge(verify_jti: ->(_jti, pl) {
+          expect(pl).to eq(payload)
+        }))
+      end
     end
 
     context '.verify_not_before(payload, options)' do
@@ -175,8 +202,12 @@ module JWT
         end.to raise_error JWT::ImmatureSignature
       end
 
-      it 'must allow some leeway in the token age when configured' do
+      it 'must allow some leeway in the token age when global leeway is configured' do
         Verify.verify_not_before(payload, options.merge(leeway: 10))
+      end
+
+      it 'must allow some leeway in the token age when nbf_leeway is configured' do
+        Verify.verify_not_before(payload, options.merge(nbf_leeway: 10))
       end
     end
 

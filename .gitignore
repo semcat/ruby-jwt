@@ -9,3 +9,6 @@ coverage/
 .vscode/
 .bundle
 bin/
+*gemfile.lock
+.vagrant
+ubuntu-bionic*
